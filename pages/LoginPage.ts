@@ -21,7 +21,7 @@ export class LoginPage extends BasePage {
     await this.usernameInput.fill(username);
     await this.passwordInput.fill(password);
     await this.loginButton.click();
-    await this.waitForNetworkIdle();
+    await this.logoutLink.waitFor({ state: 'visible', timeout: 10000 });
   }
 
   async logout(): Promise<void> {
