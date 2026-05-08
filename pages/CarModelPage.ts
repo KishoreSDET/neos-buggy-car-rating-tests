@@ -24,11 +24,14 @@ export class CarModelPage extends BasePage {
   }
 
   async vote(comment?: string): Promise<void> {
+    const alreadyVoted = await this.successMessage.isVisible();
+    if (alreadyVoted) return;
+
     if (comment) {
       await this.commentTextarea.fill(comment);
     }
     await this.voteButton.click();
-    await this.waitForNetworkIdle();
+    await this.successMessage.waitFor({ state: 'visible', timeout: 10000 });
   }
 
   async isVoteSuccessful(): Promise<boolean> {
