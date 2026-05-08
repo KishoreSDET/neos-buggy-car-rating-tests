@@ -1,6 +1,10 @@
-import { Before, After, AfterStep, ITestCaseHookParameter } from '@cucumber/cucumber';
+import { Before, After, AfterStep, ITestCaseHookParameter, setDefaultTimeout } from '@cucumber/cucumber';
 import { chromium } from '@playwright/test';
 import { CarRatingWorld } from './world';
+import * as dotenv from 'dotenv';
+
+dotenv.config();
+setDefaultTimeout(30000);
 
 Before(async function (this: CarRatingWorld) {
   this.browser = await chromium.launch({ headless: true });
