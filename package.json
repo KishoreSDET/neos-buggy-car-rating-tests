@@ -1,0 +1,19 @@
+{
+  "name": "neos-buggy-car-rating-tests",
+  "version": "1.0.0",
+  "description": "Playwright + Cucumber BDD test suite for buggy.justtestit.org — NEOS technical assignment",
+  "author": "Kishore Atapaka",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "test": "cucumber-js",
+    "test:api": "cucumber-js --tags @api",
+    "test:perf": "cucumber-js --tags @performance",
+    "test:security": "cucumber-js --tags @security",
+    "test:ui": "cucumber-js --tags @ui",
+    "lint": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}
