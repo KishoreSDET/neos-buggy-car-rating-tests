@@ -13,6 +13,7 @@ on:
         type: choice
         options:
           - production
+          - staging
   schedule:
     - cron: '0 2 * * *'
 
@@ -21,6 +22,9 @@ jobs:
     name: Run Car Rating Feature Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    environment: ${{ github.event.inputs.environment || 'production' }}
+    permissions:
+      pull-requests: write
 
     steps:
       - name: Checkout repository
@@ -41,7 +45,7 @@ jobs:
       - name: Run car rating feature tests
         id: run-tests
         env:
-          BASE_URL: ${{ secrets.BASE_URL || 'https://buggy.justtestit.org' }}
+          BASE_URL: ${{ vars.BASE_URL || 'https://buggy.justtestit.org' }}
           TEST_USERNAME: ${{ secrets.TEST_USERNAME }}
           TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
         run: npm test
