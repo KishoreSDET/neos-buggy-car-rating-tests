@@ -44,6 +44,12 @@ When('I log out', async function (this: CarRatingWorld) {
   await loginPage.logout();
 });
 
+Then('the model name should be displayed on the page', async function (this: CarRatingWorld) {
+  const carModelPage = new CarModelPage(this.page);
+  const modelName = await carModelPage.getModelName();
+  expect(modelName.trim().length).toBeGreaterThan(0);
+});
+
 Then('the vote confirmation message should be displayed', async function (this: CarRatingWorld) {
   const carModelPage = new CarModelPage(this.page);
   const voted = await carModelPage.isVoteSuccessful();
