@@ -10,6 +10,8 @@ module.exports = {
     ],
     formatOptions: { snippetInterface: 'async-await', resultsDir: 'reports/allure-results' },
     paths: ['features/**/*.feature'],
+    retry: 1,
+    retryTagFilter: '@flaky',
     publishQuiet: true,
   },
 };
