@@ -76,6 +76,40 @@ jobs:
         id: deploy-pages
         uses: actions/deploy-pages@v4
 
+      - name: Write job summary
+        if: always()
+        run: |
+          if [ -f reports/cucumber-report.json ]; then
+            PASSED=$(node -e "
+              const r = require('./reports/cucumber-report.json');
+              const s = r.flatMap(f => f.elements || []);
+              console.log(s.filter(x => x.steps.every(st => st.result.status === 'passed')).length);
+            ")
+            FAILED=$(node -e "
+              const r = require('./reports/cucumber-report.json');
+              const s = r.flatMap(f => f.elements || []);
+              console.log(s.filter(x => x.steps.some(st => st.result.status === 'failed')).length);
+            ")
+            TOTAL=$(node -e "
+              const r = require('./reports/cucumber-report.json');
+              console.log(r.flatMap(f => f.elements || []).length);
+            ")
+            STATUS=$([[ "$FAILED" == "0" ]] && echo "✅ All scenarios passed" || echo "❌ $FAILED scenario(s) failed")
+          else
+            PASSED=0; FAILED=0; TOTAL=0
+            STATUS="⚠️ No test results found"
+          fi
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          ## Car Rating Feature Test Results
+          **${STATUS}**
+
+          | Passed | Failed | Total |
+          |--------|--------|-------|
+          | ${PASSED} | ${FAILED} | ${TOTAL} |
+
+          📊 [View Allure Report](https://kishoresdet.github.io/neos-buggy-car-rating-tests/)
+          EOF
+
       - name: Parse test results for PR summary
         if: always() && github.event_name == 'pull_request'
         id: parse-results
@@ -110,8 +144,9 @@ jobs:
               `|--------|--------|-------|`,
               `| ${passed} | ${failed} | ${total} |`,
               '',
-              `Run: [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})`,
-              `Allure report: [View artifact](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`,
+              `📋 Run: [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})`,
+              `📦 Allure report (this PR): download from [artifacts](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})`,
+              `📊 Allure report (live — last main run): https://kishoresdet.github.io/neos-buggy-car-rating-tests/`,
             ].join('\n');
             github.rest.issues.createComment({
               issue_number: context.issue.number,
