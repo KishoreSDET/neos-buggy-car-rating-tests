@@ -25,6 +25,9 @@ jobs:
     environment: ${{ github.event.inputs.environment || 'production' }}
     permissions:
       pull-requests: write
+      pages: write
+      id-token: write
+      contents: read
 
     steps:
       - name: Checkout repository
@@ -49,6 +52,29 @@ jobs:
           TEST_USERNAME: ${{ secrets.TEST_USERNAME }}
           TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
         run: npm test
+
+      - name: Generate Allure report
+        if: always()
+        run: npm run report:allure
+
+      - name: Upload Allure report as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report-${{ github.run_number }}
+          path: reports/allure-report/
+          retention-days: 30
+
+      - name: Upload Allure report for GitHub Pages
+        if: always() && github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: reports/allure-report/
+
+      - name: Deploy Allure report to GitHub Pages
+        if: always() && github.event_name != 'pull_request'
+        id: deploy-pages
+        uses: actions/deploy-pages@v4
 
       - name: Parse test results for PR summary
         if: always() && github.event_name == 'pull_request'
@@ -85,6 +111,7 @@ jobs:
               `| ${passed} | ${failed} | ${total} |`,
               '',
               `Run: [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})`,
+              `Allure report: [View artifact](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`,
             ].join('\n');
             github.rest.issues.createComment({
               issue_number: context.issue.number,
@@ -93,7 +120,7 @@ jobs:
               body
             });
 
-      - name: Upload test report
+      - name: Upload Cucumber report artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
