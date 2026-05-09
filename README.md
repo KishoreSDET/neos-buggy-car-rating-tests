@@ -1,6 +1,6 @@
 # NEOS Buggy Car Rating — Automated Test Suite
 
-![CI](https://github.com/KishoreSDET/neos-buggy-car-rating-tests/actions/workflows/playwright-bdd-tests.yml/badge.svg)
+![CI](https://github.com/KishoreSDET/neos-buggy-car-rating-tests/actions/workflows/car-rating-feature-tests.yml/badge.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)
 ![Playwright](https://img.shields.io/badge/Playwright-1.x-orange)
@@ -158,6 +158,8 @@ npm run test:ui
 npm run lint
 ```
 
+> **Note — no browser window during test runs:** The suite runs Chromium in headless mode by default, which is correct for CI environments. You will not see a browser open locally. This is expected behaviour. Test execution is confirmed through the terminal output and the HTML report generated in `reports/`.
+
 ---
 
 ## Test Reports
@@ -198,7 +200,7 @@ neos-buggy-car-rating-tests/
 │   └── hooks.ts                  # Before/After hooks, screenshot on failure
 ├── .github/
 │   └── workflows/
-│       └── playwright-bdd-tests.yml   # GitHub Actions CI pipeline
+│       └── car-rating-feature-tests.yml  # GitHub Actions CI pipeline
 ├── reports/                      # Generated test output (gitignored)
 ├── cucumber.js                   # Cucumber runner configuration
 ├── tsconfig.json                 # TypeScript compiler configuration
@@ -210,14 +212,13 @@ neos-buggy-car-rating-tests/
 
 ## CI / CD Pipeline
 
-The GitHub Actions workflow runs on three triggers:
+The GitHub Actions workflow (`car-rating-feature-tests.yml`) runs on three triggers:
 
 | Trigger | When | Purpose |
 |---|---|---|
-| `pull_request` to `main` | Every PR | Gate — tests must pass before merge |
-| `push` to `main` | After merge | Confirm main is always green |
-| `workflow_dispatch` | Manual | On-demand run from GitHub Actions UI |
-| `schedule` (cron) | Daily 6am AEST | Overnight regression — catches site changes |
+| `pull_request` to `main` | Every PR opened or updated | Gate — CI must pass before merge; results posted as a PR comment |
+| `workflow_dispatch` | Manual trigger from Actions UI | On-demand run — link results to your PR before requesting review |
+| `schedule` (cron `0 2 * * *`) | Daily at 02:00 UTC | Catch site-side regressions between code changes |
 
 ### Pipeline steps
 
