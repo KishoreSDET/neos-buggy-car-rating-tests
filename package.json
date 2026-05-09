@@ -11,12 +11,15 @@
     "test:perf": "cucumber-js --tags @performance",
     "test:security": "cucumber-js --tags @security",
     "test:ui": "cucumber-js --tags @ui",
+    "report:allure": "allure generate reports/allure-results --clean -o reports/allure-report",
     "lint": "tsc --noEmit"
   },
   "devDependencies": {
     "@cucumber/cucumber": "^12.8.2",
     "@playwright/test": "^1.59.1",
     "@types/node": "^25.6.2",
+    "allure-commandline": "^2.40.0",
+    "allure-cucumberjs": "^3.7.2",
     "axios": "^1.16.0",
     "dotenv": "^17.4.2",
     "ts-node": "^10.9.2",
