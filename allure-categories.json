@@ -1,0 +1,17 @@
+[
+  {
+    "name": "Product Defects",
+    "matchedStatuses": ["failed"],
+    "messageRegex": ".*AssertionError.*|.*Expected.*|.*toBe.*|.*toEqual.*|.*toContain.*|.*toBeGreaterThan.*"
+  },
+  {
+    "name": "Infrastructure Issues",
+    "matchedStatuses": ["failed", "broken"],
+    "messageRegex": ".*TimeoutError.*|.*net::ERR.*|.*ECONNREFUSED.*|.*Navigation.*timeout.*|.*Site health check failed.*"
+  },
+  {
+    "name": "Test Issues",
+    "matchedStatuses": ["broken"],
+    "messageRegex": ".*TypeError.*|.*ReferenceError.*|.*is not a function.*|.*Cannot read.*|.*must be set in .env.*"
+  }
+]

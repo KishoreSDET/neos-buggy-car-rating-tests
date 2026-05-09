@@ -45,6 +45,27 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
 
+      - name: Restore Allure history from GitHub Pages
+        run: |
+          mkdir -p reports/allure-results/history
+          for file in history.json history-trend.json duration-trend.json retry-trend.json categories-trend.json; do
+            curl -sf "https://kishoresdet.github.io/neos-buggy-car-rating-tests/history/${file}" \
+              -o "reports/allure-results/history/${file}" || true
+          done
+
+      - name: Write Allure environment context and categories
+        run: |
+          mkdir -p reports/allure-results
+          cat > reports/allure-results/environment.properties << EOF
+          Trigger=${{ github.event_name }}
+          Branch=${{ github.ref_name }}
+          Run_Number=${{ github.run_number }}
+          Base_URL=${{ vars.BASE_URL || 'https://buggy.justtestit.org' }}
+          Environment=${{ github.event.inputs.environment || 'production' }}
+          Node_Version=20
+          EOF
+          cp allure-categories.json reports/allure-results/categories.json
+
       - name: Run car rating feature tests
         id: run-tests
         env:
