@@ -5,10 +5,13 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)
 ![Playwright](https://img.shields.io/badge/Playwright-1.x-orange)
 ![Cucumber](https://img.shields.io/badge/Cucumber-BDD-green)
+![Allure](https://img.shields.io/badge/Allure-Report-orange)
 ![License](https://img.shields.io/badge/license-UNLICENSED-lightgrey)
 
 > Playwright + TypeScript + Cucumber BDD test suite for [buggy.justtestit.org](https://buggy.justtestit.org)  
 > Built as part of the NEOS Life QA Engineer technical assignment.
+
+📊 **Live Allure Report:** [kishoresdet.github.io/neos-buggy-car-rating-tests](https://kishoresdet.github.io/neos-buggy-car-rating-tests/)
 
 ---
 
@@ -16,12 +19,12 @@
 
 This suite covers the full car rating user journey — login, navigate to a car model, vote with a comment, validate the result, and logout — automated using a production-grade BDD framework. Beyond the core UI scenario, the suite also includes API, performance and security smoke tests to demonstrate coverage depth.
 
-| Test type | What it covers |
-|---|---|
-| UI (E2E) | Login → Vote → Validate → Logout |
-| API | Login endpoint, vote endpoint, response structure and timing |
-| Performance | Page load time assertions (home + model pages < 3s) |
-| Security | SQL injection, XSS, unauthenticated access redirect |
+| Test type | What it covers | Status |
+|---|---|---|
+| UI (E2E) | Login → Vote → Validate → Logout | ✅ Complete |
+| API | Login endpoint, vote endpoint, response structure and timing | 🔄 In progress |
+| Performance | Page load time assertions (home + model pages < 3s) | 🔄 In progress |
+| Security | SQL injection, XSS, unauthenticated access redirect | 🔄 In progress |
 
 ---
 
@@ -32,6 +35,7 @@ This suite covers the full car rating user journey — login, navigate to a car 
 | [Playwright](https://playwright.dev) | 1.x | Auto-wait, cross-browser, built-in trace/screenshot — more reliable than Selenium for modern SPAs |
 | [TypeScript](https://www.typescriptlang.org) | 5.x | Type safety catches bugs at compile time, better IDE support than plain JS |
 | [Cucumber](https://cucumber.io) | 12.x | BDD Gherkin scenarios are readable by non-technical stakeholders — bridges QA and business |
+| [Allure](https://allurereport.org) | 2.x | Rich interactive reports with trend charts, timeline view and GitHub Pages publishing |
 | [ts-node](https://typestrong.org/ts-node) | 10.x | Run TypeScript directly without a compile step — faster feedback loop |
 | [Axios](https://axios-http.com) | 1.x | Promise-based HTTP client for API test scenarios |
 | [dotenv](https://github.com/motdotla/dotenv) | 17.x | Loads credentials from `.env` locally; GitHub Secrets in CI |
@@ -63,12 +67,15 @@ This suite covers the full car rating user journey — login, navigate to a car 
          │
 ┌────────▼────────────────────────────────────────────────┐
 │                    Playwright Browser                    │
-│            (Chromium / Firefox / WebKit)                 │
+│                  Chromium (headless)                     │
 └─────────────────────────────────────────────────────────┘
          │
 ┌────────▼────────────────────────────────────────────────┐
-│              Hooks  support/hooks.ts                     │
-│   Before: launch browser │ After: screenshot on failure  │
+│                 Hooks  support/hooks.ts                  │
+│  BeforeAll: site health check (fail fast if unreachable) │
+│  Before: launch browser  │  After: close browser        │
+│  AfterStep: screenshot on failure                        │
+│  AfterAll: suite completion log                          │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -76,7 +83,8 @@ This suite covers the full car rating user journey — login, navigate to a car 
 - All selectors live in Page Objects — never in step definitions
 - Steps read like plain English — no Playwright API exposed in Gherkin layer
 - World holds shared state (browser, page, context) across all steps
-- Hooks manage browser lifecycle and failure artifacts automatically
+- `BeforeAll` health check fails fast if the target site is unreachable — no wasted CI minutes
+- Retry strategy: `retry: 1` scoped to `@flaky` tagged scenarios — targeted, not blanket
 
 ---
 
@@ -109,20 +117,13 @@ npm install
 npx playwright install chromium
 ```
 
-> To install all browsers (Chromium, Firefox, WebKit):
-> ```bash
-> npx playwright install
-> ```
-
 ### 4. Configure environment variables
-
-Create a `.env` file in the project root:
 
 ```bash
 cp .env.example .env
 ```
 
-Then fill in your credentials:
+Fill in your credentials:
 
 ```env
 TEST_USERNAME=your_registered_username
@@ -138,48 +139,39 @@ BASE_URL=https://buggy.justtestit.org
 
 | Command | What it runs |
 |---|---|
-| `npm test` | Full suite (all tags) |
+| `npm test` | Full suite |
 | `npm run test:ui` | UI / E2E scenarios only (`@ui`) |
 | `npm run test:api` | API scenarios only (`@api`) |
 | `npm run test:perf` | Performance scenarios only (`@performance`) |
 | `npm run test:security` | Security scenarios only (`@security`) |
+| `npm run report:allure` | Generate Allure HTML from last run results |
 | `npm run lint` | TypeScript type check (no emit) |
 
-### Example
-
-```bash
-# Run full suite
-npm test
-
-# Run only UI tests
-npm run test:ui
-
-# Type check without running tests
-npm run lint
-```
-
-> **Note — no browser window during test runs:** The suite runs Chromium in headless mode by default, which is correct for CI environments. You will not see a browser open locally. This is expected behaviour. Test execution is confirmed through the terminal output and the HTML report generated in `reports/`.
+> **No browser window during local runs:** The suite runs Chromium in headless mode by default — correct for CI and consistent locally. Test execution is confirmed via terminal output and the reports in `reports/`.
 
 ---
 
 ## Test Reports
 
-After each run, reports are generated in the `reports/` directory (gitignored — not committed):
+All reports are generated in the `reports/` directory (gitignored — not committed):
 
-| Report | Path | Format |
+| Report | Path | How to open |
 |---|---|---|
-| HTML | `reports/cucumber-report.html` | Open in browser |
-| JSON | `reports/cucumber-report.json` | Machine-readable, used by CI |
+| Allure HTML | `reports/allure-report/index.html` | `open reports/allure-report/index.html` |
+| Allure raw results | `reports/allure-results/` | Used by `npm run report:allure` |
+| Cucumber HTML | `reports/cucumber-report.html` | `open reports/cucumber-report.html` |
+| Cucumber JSON | `reports/cucumber-report.json` | Machine-readable |
 
-Open the HTML report:
+**Generate and open the Allure report locally:**
 
 ```bash
-open reports/cucumber-report.html        # macOS
-start reports/cucumber-report.html       # Windows
-xdg-open reports/cucumber-report.html   # Linux
+npm test && npm run report:allure && open reports/allure-report/index.html
 ```
 
-> Screenshots of failed steps are automatically embedded in the HTML report.
+> Screenshots of failed steps are automatically embedded in the Allure report.
+
+**Live report (updated on every scheduled and on-demand CI run):**  
+[kishoresdet.github.io/neos-buggy-car-rating-tests](https://kishoresdet.github.io/neos-buggy-car-rating-tests/)
 
 ---
 
@@ -192,12 +184,12 @@ neos-buggy-car-rating-tests/
 ├── steps/
 │   └── carRatingSteps.ts         # Step definitions (Gherkin → Page Objects)
 ├── pages/
-│   ├── BasePage.ts               # Shared navigation and wait helpers
+│   ├── BasePage.ts               # Shared navigation, wait and performance helpers
 │   ├── LoginPage.ts              # Login / logout actions and selectors
-│   └── CarModelPage.ts           # Vote, comment, validation actions
+│   └── CarModelPage.ts           # Vote, comment, validation actions and selectors
 ├── support/
-│   ├── world.ts                  # Cucumber World — shared browser state
-│   └── hooks.ts                  # Before/After hooks, screenshot on failure
+│   ├── world.ts                  # Cucumber World — shared browser state across steps
+│   └── hooks.ts                  # Suite and scenario lifecycle hooks
 ├── .github/
 │   └── workflows/
 │       └── car-rating-feature-tests.yml  # GitHub Actions CI pipeline
@@ -216,9 +208,9 @@ The GitHub Actions workflow (`car-rating-feature-tests.yml`) runs on three trigg
 
 | Trigger | When | Purpose |
 |---|---|---|
-| `pull_request` to `main` | Every PR opened or updated | Gate — CI must pass before merge; results posted as a PR comment |
-| `workflow_dispatch` | Manual trigger from Actions UI | On-demand run — link results to your PR before requesting review |
-| `schedule` (cron `0 2 * * *`) | Daily at 02:00 UTC | Catch site-side regressions between code changes |
+| `pull_request` to `main` | Every PR opened or updated | Gate — CI must pass before merge; pass/fail posted as PR comment with Allure link |
+| `workflow_dispatch` | Manual trigger from Actions UI | On-demand run — trigger before requesting review to evidence results |
+| `schedule` (cron `0 2 * * *`) | Daily at 02:00 UTC | Proactive monitoring — catches site-side regressions between code changes |
 
 ### Pipeline steps
 
@@ -226,19 +218,27 @@ The GitHub Actions workflow (`car-rating-feature-tests.yml`) runs on three trigg
 2. Set up Node.js
 3. `npm ci` — clean install from lockfile
 4. Install Playwright browsers
-5. Run full test suite
-6. Upload HTML report as build artifact
-7. Post test result summary to PR
+5. Site health check (`BeforeAll`) — aborts early if site unreachable
+6. Run full test suite
+7. Generate Allure report
+8. Upload Allure report as artifact (30 days)
+9. Publish Allure report to GitHub Pages (scheduled + on-demand only)
+10. Post test result summary as PR comment (PR runs only)
+11. Write job summary with Allure link to Actions run page
+
+### GitHub Environments
+
+Credentials are scoped per environment using GitHub Environments (`production`, `staging`). The `workflow_dispatch` trigger accepts an `environment` input — selecting `staging` automatically loads staging-scoped secrets. No code changes needed to add a new environment.
 
 ---
 
 ## Environment Variables Reference
 
-| Variable | Required | Description |
-|---|---|---|
-| `TEST_USERNAME` | Yes | Registered username on buggy.justtestit.org |
-| `TEST_PASSWORD` | Yes | Account password |
-| `BASE_URL` | No | Defaults to `https://buggy.justtestit.org` |
+| Variable | Store | Required | Description |
+|---|---|---|---|
+| `TEST_USERNAME` | GitHub Secret | Yes | Registered username on buggy.justtestit.org |
+| `TEST_PASSWORD` | GitHub Secret | Yes | Account password |
+| `BASE_URL` | GitHub Variable | No | Defaults to `https://buggy.justtestit.org` |
 
 ---
 
