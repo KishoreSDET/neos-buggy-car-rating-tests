@@ -1,6 +1,9 @@
 name: Car Rating Feature Tests
 
 on:
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       environment:
@@ -36,11 +39,55 @@ jobs:
         run: npx playwright install chromium --with-deps
 
       - name: Run car rating feature tests
+        id: run-tests
         env:
           BASE_URL: ${{ secrets.BASE_URL || 'https://buggy.justtestit.org' }}
           TEST_USERNAME: ${{ secrets.TEST_USERNAME }}
           TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
         run: npm test
+
+      - name: Parse test results for PR summary
+        if: always() && github.event_name == 'pull_request'
+        id: parse-results
+        run: |
+          if [ -f reports/cucumber-report.json ]; then
+            TOTAL=$(node -e "
+              const r = require('./reports/cucumber-report.json');
+              const scenarios = r.flatMap(f => f.elements || []);
+              const passed = scenarios.filter(s => s.steps.every(st => st.result.status === 'passed')).length;
+              const failed = scenarios.filter(s => s.steps.some(st => st.result.status === 'failed')).length;
+              console.log(passed + '|' + failed + '|' + scenarios.length);
+            ")
+            echo "results=$TOTAL" >> $GITHUB_OUTPUT
+          else
+            echo "results=0|0|0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Post test results to PR
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const results = '${{ steps.parse-results.outputs.results }}';
+            const [passed, failed, total] = results.split('|').map(Number);
+            const status = failed === 0 ? '✅ All scenarios passed' : `❌ ${failed} scenario(s) failed`;
+            const body = [
+              '## Car Rating Feature Test Results',
+              '',
+              `**${status}**`,
+              '',
+              `| Passed | Failed | Total |`,
+              `|--------|--------|-------|`,
+              `| ${passed} | ${failed} | ${total} |`,
+              '',
+              `Run: [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})`,
+            ].join('\n');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body
+            });
 
       - name: Upload test report
         if: always()
