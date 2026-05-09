@@ -1,3 +1,4 @@
+@ui
 Feature: Car Model Rating
   As a registered user
   I want to vote on a car model and leave a comment
