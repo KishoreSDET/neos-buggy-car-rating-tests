@@ -6,6 +6,7 @@
   "license": "UNLICENSED",
   "private": true,
   "scripts": {
+    "pretest": "rm -rf reports/allure-results",
     "test": "cucumber-js",
     "test:api": "cucumber-js --tags @api",
     "test:perf": "cucumber-js --tags @performance",
