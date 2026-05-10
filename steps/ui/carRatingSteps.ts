@@ -1,8 +1,8 @@
 import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { CarRatingWorld } from '../support/world';
-import { LoginPage } from '../pages/LoginPage';
-import { CarModelPage } from '../pages/CarModelPage';
+import { CarRatingWorld } from '../../support/world';
+import { LoginPage } from '../../pages/LoginPage';
+import { CarModelPage } from '../../pages/CarModelPage';
 
 Given('I am on the Buggy car rating site', async function (this: CarRatingWorld) {
   const loginPage = new LoginPage(this.page);
