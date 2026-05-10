@@ -1,8 +1,6 @@
 import { Page, Locator } from '@playwright/test';
 import { BasePage } from './BasePage';
 
-const MODEL_PATH = '/model/ckl2phsabijs71623vk0|ckl2phsabijs71623vqg';
-
 export class CarModelPage extends BasePage {
   private readonly commentTextarea: Locator;
   private readonly voteButton: Locator;
@@ -19,23 +17,22 @@ export class CarModelPage extends BasePage {
     this.modelHeading    = page.locator('h3').first();
   }
 
-  async navigateToModel(): Promise<void> {
-    await this.navigate(MODEL_PATH);
-  }
-
-  async vote(comment?: string): Promise<void> {
-    const alreadyVoted = await this.successMessage.isVisible();
-    if (alreadyVoted) return;
-
+  async vote(comment?: string): Promise<boolean> {
+    if (await this.isVoteSuccessful()) return false;
     if (comment) {
       await this.commentTextarea.fill(comment);
     }
     await this.voteButton.click();
     await this.successMessage.waitFor({ state: 'visible', timeout: 10000 });
+    return true;
   }
 
   async isVoteSuccessful(): Promise<boolean> {
     return this.successMessage.isVisible();
+  }
+
+  async isVoteButtonVisible(): Promise<boolean> {
+    return this.voteButton.isVisible();
   }
 
   async getVoteCount(): Promise<number> {

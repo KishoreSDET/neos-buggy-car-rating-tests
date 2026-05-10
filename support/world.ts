@@ -11,6 +11,10 @@ export class CarRatingWorld extends World {
   apiResponseTimeMs: number = 0;
   authToken: string = '';
 
+  voteCountBefore: number = 0;
+  voteWasCast: boolean = false;
+  expectedModelName: string = '';
+
   constructor(options: IWorldOptions) {
     super(options);
   }
