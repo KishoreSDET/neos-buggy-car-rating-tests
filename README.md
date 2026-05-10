@@ -17,14 +17,14 @@
 
 ## Overview
 
-This suite covers the full car rating user journey — login, navigate to a car model, vote with a comment, validate the result, and logout — automated using a production-grade BDD framework. Beyond the core UI scenario, the suite also includes API, performance and security smoke tests to demonstrate coverage depth.
+This suite covers the full car rating user journey — login, navigate to a car model, vote with a comment, validate the result, and logout — automated using a production-grade BDD framework. Beyond the core UI scenario, the suite also includes API tests and negative tests to demonstrate coverage depth.
 
 | Test type | What it covers | Status |
 |---|---|---|
-| UI (E2E) | Login → Vote → Validate → Logout | ✅ Complete |
-| API | Login endpoint, model endpoint, response structure and timing | ✅ Complete |
-| Performance | Page load time assertions (home + model pages < 3s) | 🔄 In progress |
-| Security | SQL injection, XSS, unauthenticated access redirect | 🔄 In progress |
+| UI (E2E) | Login → Vote → Validate → Logout, vote without comment, invalid login error, auth guard | ✅ Complete |
+| API | Login (valid + invalid), user profile, model endpoint, response structure and timing | ✅ Complete |
+| Performance | Page load time assertions | 📋 Future roadmap |
+| Security | SQL injection, XSS, unauthenticated access | 📋 Future roadmap |
 
 ---
 
@@ -48,14 +48,12 @@ This suite covers the full car rating user journey — login, navigate to a car 
 ┌─────────────────────────────────────────────────────────┐
 │              Gherkin Feature Files                       │
 │   features/ui/     features/api/                        │
-│   features/security/  features/performance/             │
 │         (plain English — readable by business)          │
 └────────────────────────┬────────────────────────────────┘
                          │
 ┌────────────────────────▼────────────────────────────────┐
 │                   Step Definitions                       │
 │   steps/ui/    steps/api/                               │
-│   steps/security/  steps/performance/                   │
 │      (maps Gherkin steps to page objects or axios)      │
 └────────┬───────────────────────────────┬────────────────┘
          │                               │
@@ -64,8 +62,9 @@ This suite covers the full car rating user journey — login, navigate to a car 
 │  pages/         │             │   support/world.ts       │
 │  ├ BasePage.ts  │             │   (shared state across   │
 │  ├ LoginPage.ts │             │    all steps per         │
-│  └ CarModel...  │             │    scenario)             │
-└────────┬────────┘             └─────────────────────────┘
+│  ├ HomePage.ts  │             │    scenario)             │
+│  └ CarModel...  │             └─────────────────────────┘
+└────────┬────────┘
          │
 ┌────────▼────────────────────────────────────────────────┐
 │                    Playwright Browser                    │
@@ -87,6 +86,7 @@ This suite covers the full car rating user journey — login, navigate to a car 
 - Steps read like plain English — no Playwright API exposed in Gherkin layer
 - World holds shared state (browser, page, context) across all steps
 - `BeforeAll` health check fails fast if the target site is unreachable — no wasted CI minutes
+- Hooks are tag-scoped (`@ui`) — API tests never spin up a browser
 - Retry strategy: `retry: 1` scoped to `@flaky` tagged scenarios — targeted, not blanket
 
 ---
@@ -145,8 +145,6 @@ BASE_URL=https://buggy.justtestit.org
 | `npm test` | Full suite |
 | `npm run test:ui` | UI / E2E scenarios only (`@ui`) |
 | `npm run test:api` | API scenarios only (`@api`) |
-| `npm run test:perf` | Performance scenarios only (`@performance`) |
-| `npm run test:security` | Security scenarios only (`@security`) |
 | `npm run report:allure` | Generate Allure HTML from last run results |
 | `npm run lint` | TypeScript type check (no emit) |
 
@@ -160,7 +158,7 @@ All reports are generated in the `reports/` directory (gitignored — not commit
 
 | Report | Path | How to open |
 |---|---|---|
-| Allure HTML | `reports/allure-report/index.html` | `open reports/allure-report/index.html` |
+| Allure HTML | `reports/allure-report/index.html` | `npx allure open reports/allure-report` |
 | Allure raw results | `reports/allure-results/` | Used by `npm run report:allure` |
 | Cucumber HTML | `reports/cucumber-report.html` | `open reports/cucumber-report.html` |
 | Cucumber JSON | `reports/cucumber-report.json` | Machine-readable |
@@ -186,7 +184,8 @@ npm test && npm run report:allure && npx allure open reports/allure-report
 neos-buggy-car-rating-tests/
 ├── features/
 │   ├── ui/
-│   │   └── car-rating.feature        # UI E2E scenarios (login, vote, validate, logout)
+│   │   ├── car-rating.feature        # UI E2E scenarios (login, vote, validate, logout)
+│   │   └── auth.feature              # Authentication negative tests (invalid login)
 │   ├── api/
 │   │   └── api.feature               # API scenarios (login endpoint, model endpoint, timing)
 │   ├── security/                     # Security smoke tests (coming soon)
@@ -196,11 +195,10 @@ neos-buggy-car-rating-tests/
 │   │   └── carRatingSteps.ts         # UI step definitions (Gherkin → Page Objects)
 │   ├── api/
 │   │   └── apiSteps.ts               # API step definitions (axios HTTP calls)
-│   ├── security/                     # Security step definitions (coming soon)
-│   └── performance/                  # Performance step definitions (coming soon)
 ├── pages/
 │   ├── BasePage.ts                   # Shared navigation, wait and performance helpers
 │   ├── LoginPage.ts                  # Login / logout actions and selectors
+│   ├── HomePage.ts                   # Home page navigation by model name
 │   └── CarModelPage.ts               # Vote, comment, validation actions and selectors
 ├── support/
 │   ├── world.ts                      # Cucumber World — shared state across steps per scenario
@@ -234,7 +232,7 @@ The GitHub Actions workflow (`car-rating-feature-tests.yml`) runs on three trigg
 3. `npm ci` — clean install from lockfile
 4. Install Playwright browsers
 5. Site health check (`BeforeAll`) — aborts early if site unreachable
-6. Run full test suite
+6. Run full test suite — API scenarios execute before UI (alphabetical glob ordering ensures the backend contract is validated before a browser is launched)
 7. Generate Allure report
 8. Upload Allure report as artifact (30 days)
 9. Publish Allure report to GitHub Pages (scheduled + on-demand only)
@@ -249,26 +247,26 @@ Credentials are scoped per environment using GitHub Environments (`production`, 
 
 ## Engineering Roadmap
 
-The current suite covers the core assignment scenarios and demonstrates the foundational framework. The following improvements represent the next layer of engineering rigour — prioritised by business impact.
+The current suite covers the core assignment scenarios and demonstrates the foundational framework. The following improvements are prioritised by business impact — each mapped to the outcome it delivers.
 
 ### Test coverage
 
-| Improvement | Rationale |
+| Improvement | Impact |
 |---|---|
-| **Test data isolation** — dedicated account per run, or API-based state reset | The current test account has a persistent vote history. Repeat runs silently degrade assertion strength. Isolated test data is the single most important maturity upgrade for a production suite. |
-| **Parameterized model navigation** — model name as Gherkin test data, resolved against the `/overall` listing at runtime | Removes the hardcoded model dependency. Any model can be tested by changing a single Gherkin value — zero code changes. Directly maps to multi-product coverage in insurance (different policy types, coverage tiers). |
-| **Security depth** — SQL injection via comment field, stored XSS, CSRF, auth token scope | The comment field is higher impact than the login form — a stored payload persists in the database and affects every user who views that model page. For a platform handling sensitive personal data, stored attack surfaces are the priority. |
-| **Cross-browser and mobile viewport coverage** — Safari, Firefox, and common device profiles via Playwright `devices` | Australian insurance customers use a wide range of browsers and devices. WebKit/Safari coverage matters — Playwright supports it natively with no additional tooling. |
+| **Test data isolation** — dedicated account per run, or API-based state reset | Highest priority. The current account accumulates vote history across runs, silently weakening the vote-count assertion. Without this, the `+1` check degrades to `greaterThan(0)` on repeat runs — a false pass that masks real bugs. |
+| **Parameterised model navigation** — model name as Gherkin test data, resolved against the `/overall` listing at runtime | Any model testable by changing a single Gherkin value — zero code changes. Directly maps to multi-product coverage (different policy types, coverage tiers). |
+| **Security depth** — SQL injection via comment field, stored XSS, CSRF, auth token scope | The comment field is higher impact than the login form — a stored payload persists in the database and affects every user who views that model page. |
+| **Cross-browser and mobile viewport coverage** — Safari, Firefox, and common device profiles via Playwright `devices` | Australian insurance customers use a wide range of browsers and devices. WebKit/Safari coverage matters and Playwright supports it natively with no additional tooling. |
 | **Accessibility audit** — axe-core integration per scenario | Regulatory baseline for financial services products. Surface violations early in the pipeline rather than as a manual audit finding. |
 
 ### Pipeline
 
-| Improvement | Rationale |
+| Improvement | Impact |
 |---|---|
-| **Test sharding across CI machines** — GitHub Actions matrix with `--shard=X/N` | At current scale, sequential execution is fine. At 100+ scenarios, a 4-shard matrix keeps PR feedback under 90 seconds. The World-per-scenario pattern means the framework is parallel-ready with no architectural changes. |
+| **Test sharding via GitHub Actions matrix** — parallel execution using `--shard=X/N` across a matrix of runners | At current scale, sequential execution is fine. At 100+ scenarios, a 4-shard matrix reduces CI time by ~75%, keeping PR feedback under 90 seconds. The World-per-scenario design means the framework is already parallel-safe — no architectural changes needed. A matrix job looks like: `strategy: { matrix: { shard: [1,2,3,4] } }` with `cucumber-js --shard=${{ matrix.shard }}/4`. |
 | **Intelligent test selection** — run only tests covering changed files on PR | Full suite on every PR is expensive at scale. Mapping code changes to test coverage means PRs stay fast and full regression runs nightly. |
-| **AI-assisted failure analysis** — pipe failure output and screenshot to an LLM, post plain-English diagnosis to the PR comment | Reduces time-to-diagnosis from 30 minutes to 5. Instead of reading a raw stack trace, the developer sees: what failed, probable cause, suggested fix — without opening the Allure report. |
-| **Dedicated environment pipeline stages** — separate jobs for API → UI → security, with `needs:` dependency chain | API tests validate the backend contract first. If the API is broken, UI tests are skipped — no wasted browser minutes. Each layer is a quality gate for the next. |
+| **AI-assisted failure analysis** — pipe failure output and screenshot to an LLM, post plain-English diagnosis to the PR comment | Reduces time-to-diagnosis significantly. Instead of reading a raw stack trace, the developer sees: what failed, probable cause, suggested fix — without opening the Allure report. |
+| **Dedicated environment pipeline stages** — separate jobs for API → UI, with `needs:` dependency chain | API tests validate the backend contract first. If the API is broken, UI tests are skipped — no wasted browser minutes. Each layer is a quality gate for the next. |
 
 ---
 
@@ -288,5 +286,3 @@ The current suite covers the core assignment scenarios and demonstrates the foun
 GitHub: [@KishoreSDET](https://github.com/KishoreSDET)
 
 ---
-
-*Built for the NEOS Life QA Engineer technical assignment.*
