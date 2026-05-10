@@ -22,7 +22,7 @@ This suite covers the full car rating user journey — login, navigate to a car 
 | Test type | What it covers | Status |
 |---|---|---|
 | UI (E2E) | Login → Vote → Validate → Logout | ✅ Complete |
-| API | Login endpoint, vote endpoint, response structure and timing | 🔄 In progress |
+| API | Login endpoint, model endpoint, response structure and timing | ✅ Complete |
 | Performance | Page load time assertions (home + model pages < 3s) | 🔄 In progress |
 | Security | SQL injection, XSS, unauthenticated access redirect | 🔄 In progress |
 
@@ -46,35 +46,38 @@ This suite covers the full car rating user journey — login, navigate to a car 
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                   Gherkin Feature Files                  │
-│              features/car-rating.feature                 │
+│              Gherkin Feature Files                       │
+│   features/ui/     features/api/                        │
+│   features/security/  features/performance/             │
 │         (plain English — readable by business)          │
 └────────────────────────┬────────────────────────────────┘
                          │
 ┌────────────────────────▼────────────────────────────────┐
 │                   Step Definitions                       │
-│               steps/carRatingSteps.ts                    │
-│      (maps Gherkin steps to page object methods)        │
+│   steps/ui/    steps/api/                               │
+│   steps/security/  steps/performance/                   │
+│      (maps Gherkin steps to page objects or axios)      │
 └────────┬───────────────────────────────┬────────────────┘
          │                               │
 ┌────────▼────────┐             ┌────────▼────────────────┐
 │   Page Objects  │             │   Cucumber World         │
 │  pages/         │             │   support/world.ts       │
-│  ├ BasePage.ts  │             │   (shared browser/page   │
-│  ├ LoginPage.ts │             │    state across steps)   │
-│  └ CarModel...  │             └─────────────────────────┘
-└────────┬────────┘
+│  ├ BasePage.ts  │             │   (shared state across   │
+│  ├ LoginPage.ts │             │    all steps per         │
+│  └ CarModel...  │             │    scenario)             │
+└────────┬────────┘             └─────────────────────────┘
          │
 ┌────────▼────────────────────────────────────────────────┐
 │                    Playwright Browser                    │
-│                  Chromium (headless)                     │
+│              Chromium (headless) — @ui only             │
 └─────────────────────────────────────────────────────────┘
          │
 ┌────────▼────────────────────────────────────────────────┐
 │                 Hooks  support/hooks.ts                  │
 │  BeforeAll: site health check (fail fast if unreachable) │
-│  Before: launch browser  │  After: close browser        │
-│  AfterStep: screenshot on failure                        │
+│  Before (@ui): launch browser                           │
+│  AfterStep (@ui): screenshot on failure                  │
+│  After (@ui): close browser                             │
 │  AfterAll: suite completion log                          │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -165,8 +168,10 @@ All reports are generated in the `reports/` directory (gitignored — not commit
 **Generate and open the Allure report locally:**
 
 ```bash
-npm test && npm run report:allure && open reports/allure-report/index.html
+npm test && npm run report:allure && npx allure open reports/allure-report
 ```
+
+> `npm test` automatically cleans previous Allure results before each run via the `pretest` script — no manual cleanup needed. Opening via `npx allure open` is required as Allure reports use fetch calls that browsers block on `file://` protocol.
 
 > Screenshots of failed steps are automatically embedded in the Allure report.
 
@@ -180,24 +185,34 @@ npm test && npm run report:allure && open reports/allure-report/index.html
 ```
 neos-buggy-car-rating-tests/
 ├── features/
-│   └── car-rating.feature        # Gherkin BDD scenarios
+│   ├── ui/
+│   │   └── car-rating.feature        # UI E2E scenarios (login, vote, validate, logout)
+│   ├── api/
+│   │   └── api.feature               # API scenarios (login endpoint, model endpoint, timing)
+│   ├── security/                     # Security smoke tests (coming soon)
+│   └── performance/                  # Performance assertions (coming soon)
 ├── steps/
-│   └── carRatingSteps.ts         # Step definitions (Gherkin → Page Objects)
+│   ├── ui/
+│   │   └── carRatingSteps.ts         # UI step definitions (Gherkin → Page Objects)
+│   ├── api/
+│   │   └── apiSteps.ts               # API step definitions (axios HTTP calls)
+│   ├── security/                     # Security step definitions (coming soon)
+│   └── performance/                  # Performance step definitions (coming soon)
 ├── pages/
-│   ├── BasePage.ts               # Shared navigation, wait and performance helpers
-│   ├── LoginPage.ts              # Login / logout actions and selectors
-│   └── CarModelPage.ts           # Vote, comment, validation actions and selectors
+│   ├── BasePage.ts                   # Shared navigation, wait and performance helpers
+│   ├── LoginPage.ts                  # Login / logout actions and selectors
+│   └── CarModelPage.ts               # Vote, comment, validation actions and selectors
 ├── support/
-│   ├── world.ts                  # Cucumber World — shared browser state across steps
-│   └── hooks.ts                  # Suite and scenario lifecycle hooks
+│   ├── world.ts                      # Cucumber World — shared state across steps per scenario
+│   └── hooks.ts                      # Suite and scenario lifecycle hooks
 ├── .github/
 │   └── workflows/
 │       └── car-rating-feature-tests.yml  # GitHub Actions CI pipeline
-├── reports/                      # Generated test output (gitignored)
-├── cucumber.js                   # Cucumber runner configuration
-├── tsconfig.json                 # TypeScript compiler configuration
-├── package.json                  # Dependencies and npm scripts
-└── .env.example                  # Environment variable template
+├── reports/                          # Generated test output (gitignored)
+├── cucumber.js                       # Cucumber runner configuration
+├── tsconfig.json                     # TypeScript compiler configuration
+├── package.json                      # Dependencies and npm scripts
+└── .env.example                      # Environment variable template
 ```
 
 ---
