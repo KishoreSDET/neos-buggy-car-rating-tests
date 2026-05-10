@@ -66,7 +66,7 @@ jobs:
           EOF
           cp allure-categories.json reports/allure-results/categories.json
 
-      - name: Run car rating feature tests
+      - name: Run all tests
         id: run-tests
         env:
           BASE_URL: ${{ vars.BASE_URL || 'https://buggy.justtestit.org' }}
