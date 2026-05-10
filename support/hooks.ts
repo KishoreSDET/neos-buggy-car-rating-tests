@@ -35,20 +35,20 @@ AfterAll(async function () {
   console.log('✔ Test suite complete — all scenarios finished');
 });
 
-Before({ name: 'Launch browser and open page' }, async function (this: CarRatingWorld) {
+Before({ tags: '@ui', name: 'Launch browser and open page' }, async function (this: CarRatingWorld) {
   this.browser = await chromium.launch({ headless: true });
   this.context = await this.browser.newContext();
   this.page    = await this.context.newPage();
 });
 
-AfterStep(async function (this: CarRatingWorld, { result }: ITestCaseHookParameter) {
+AfterStep({ tags: '@ui' }, async function (this: CarRatingWorld, { result }: ITestCaseHookParameter) {
   if (result?.status === 'FAILED') {
     const screenshot = await this.page.screenshot({ fullPage: true });
     await this.attach(screenshot, 'image/png');
   }
 });
 
-After({ name: 'Close browser and release resources' }, async function (this: CarRatingWorld) {
+After({ tags: '@ui', name: 'Close browser and release resources' }, async function (this: CarRatingWorld) {
   await this.page.close();
   await this.context.close();
   await this.browser.close();
