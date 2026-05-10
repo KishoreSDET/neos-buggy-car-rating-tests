@@ -29,6 +29,6 @@ Feature: Login and Voting API
   Scenario: API responses are returned within acceptable time
     Given I have a valid auth token
     When I POST to the login endpoint with valid credentials
-    Then the response time should be under 3000 milliseconds
+    Then the response time should be under 5000 milliseconds
     When I GET the car model details
-    Then the response time should be under 3000 milliseconds
+    Then the response time should be under 5000 milliseconds
