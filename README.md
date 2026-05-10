@@ -247,6 +247,31 @@ Credentials are scoped per environment using GitHub Environments (`production`, 
 
 ---
 
+## Engineering Roadmap
+
+The current suite covers the core assignment scenarios and demonstrates the foundational framework. The following improvements represent the next layer of engineering rigour — prioritised by business impact.
+
+### Test coverage
+
+| Improvement | Rationale |
+|---|---|
+| **Test data isolation** — dedicated account per run, or API-based state reset | The current test account has a persistent vote history. Repeat runs silently degrade assertion strength. Isolated test data is the single most important maturity upgrade for a production suite. |
+| **Parameterized model navigation** — model name as Gherkin test data, resolved against the `/overall` listing at runtime | Removes the hardcoded model dependency. Any model can be tested by changing a single Gherkin value — zero code changes. Directly maps to multi-product coverage in insurance (different policy types, coverage tiers). |
+| **Security depth** — SQL injection via comment field, stored XSS, CSRF, auth token scope | The comment field is higher impact than the login form — a stored payload persists in the database and affects every user who views that model page. For a platform handling sensitive personal data, stored attack surfaces are the priority. |
+| **Cross-browser and mobile viewport coverage** — Safari, Firefox, and common device profiles via Playwright `devices` | Australian insurance customers use a wide range of browsers and devices. WebKit/Safari coverage matters — Playwright supports it natively with no additional tooling. |
+| **Accessibility audit** — axe-core integration per scenario | Regulatory baseline for financial services products. Surface violations early in the pipeline rather than as a manual audit finding. |
+
+### Pipeline
+
+| Improvement | Rationale |
+|---|---|
+| **Test sharding across CI machines** — GitHub Actions matrix with `--shard=X/N` | At current scale, sequential execution is fine. At 100+ scenarios, a 4-shard matrix keeps PR feedback under 90 seconds. The World-per-scenario pattern means the framework is parallel-ready with no architectural changes. |
+| **Intelligent test selection** — run only tests covering changed files on PR | Full suite on every PR is expensive at scale. Mapping code changes to test coverage means PRs stay fast and full regression runs nightly. |
+| **AI-assisted failure analysis** — pipe failure output and screenshot to an LLM, post plain-English diagnosis to the PR comment | Reduces time-to-diagnosis from 30 minutes to 5. Instead of reading a raw stack trace, the developer sees: what failed, probable cause, suggested fix — without opening the Allure report. |
+| **Dedicated environment pipeline stages** — separate jobs for API → UI → security, with `needs:` dependency chain | API tests validate the backend contract first. If the API is broken, UI tests are skipped — no wasted browser minutes. Each layer is a quality gate for the next. |
+
+---
+
 ## Environment Variables Reference
 
 | Variable | Store | Required | Description |
