@@ -66,22 +66,13 @@ jobs:
           EOF
           cp allure-categories.json reports/allure-results/categories.json
 
-      - name: Run API tests
-        id: run-api-tests
+      - name: Run all tests
+        id: run-tests
         env:
           BASE_URL: ${{ vars.BASE_URL || 'https://buggy.justtestit.org' }}
           TEST_USERNAME: ${{ secrets.TEST_USERNAME }}
           TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
-        run: npm run test:api
-
-      - name: Run UI tests
-        id: run-ui-tests
-        if: always()
-        env:
-          BASE_URL: ${{ vars.BASE_URL || 'https://buggy.justtestit.org' }}
-          TEST_USERNAME: ${{ secrets.TEST_USERNAME }}
-          TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
-        run: npm run test:ui
+        run: npm test
 
       - name: Generate Allure report
         if: always()
