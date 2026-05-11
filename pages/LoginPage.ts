@@ -11,12 +11,12 @@ export class LoginPage extends BasePage {
 
   constructor(page: Page) {
     super(page);
-    this.usernameInput = page.locator('input[name="login"]');
-    this.passwordInput = page.locator('input[name="password"]');
-    this.loginButton   = page.locator('button.btn-success[type="submit"]');
-    this.logoutLink    = page.locator('a.nav-link:has-text("Logout")');
-    this.greeting      = page.locator('span.nav-link.disabled');
-    this.loginError    = page.locator('.form-group.has-danger span.label-warning');
+    this.usernameInput = page.getByPlaceholder('Login');
+    this.passwordInput = page.locator('input[type="password"]');
+    this.loginButton   = page.getByRole('button', { name: 'Login' });
+    this.logoutLink    = page.getByRole('link', { name: 'Logout' });
+    this.greeting      = page.locator('nav span').filter({ hasText: /^Hi,/ });
+    this.loginError    = page.getByText('Invalid username/password');
   }
 
   async login(username: string, password: string): Promise<void> {
