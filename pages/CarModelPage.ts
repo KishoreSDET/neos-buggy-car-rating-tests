@@ -11,10 +11,10 @@ export class CarModelPage extends BasePage {
   constructor(page: Page) {
     super(page);
     this.commentTextarea = page.locator('textarea#comment');
-    this.voteButton      = page.locator('button.btn-success:has-text("Vote!")');
-    this.successMessage  = page.locator('p.card-text:has-text("Thank you for your vote!")');
-    this.voteCount       = page.locator('h4:has-text("Votes:") strong');
-    this.modelHeading    = page.locator('h3').first();
+    this.voteButton      = page.getByRole('button', { name: 'Vote!' });
+    this.successMessage  = page.getByText('Thank you for your vote!');
+    this.voteCount       = page.getByRole('heading', { name: /Votes:/ }).locator('strong');
+    this.modelHeading    = page.getByRole('heading', { level: 3 }).first();
   }
 
   async vote(comment?: string): Promise<boolean> {
